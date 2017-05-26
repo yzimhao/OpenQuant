@@ -20,6 +20,7 @@ from rqalpha.environment import Environment
 from rqalpha.const import ACCOUNT_TYPE
 from rqalpha.const import MATCHING_TYPE
 from rqalpha.mod.rqalpha_mod_sys_simulation.simulation_broker import SimulationBroker
+from rqalpha.mod.rqalpha_mod_sys_simulation.utils import init_portfolio
 import six
 
 class FUTUBrokerHK(AbstractBroker):
@@ -35,7 +36,7 @@ class FUTUBrokerHK(AbstractBroker):
 
         :return: Portfolio
         """
-        raise NotImplementedError
+        return init_portfolio(self._env)
 
     def submit_order(self, order):
         """
@@ -44,7 +45,8 @@ class FUTUBrokerHK(AbstractBroker):
         提交订单。在当前版本，RQAlpha 会生成 :class:`~Order` 对象，再通过此接口提交到 Broker。
         TBD: 由 Broker 对象生成 Order 并返回？
         """
-        raise NotImplementedError
+        print("FUTUBrokerHK : submit_order ")
+        #raise NotImplementedError
 
     def cancel_order(self, order):
         """

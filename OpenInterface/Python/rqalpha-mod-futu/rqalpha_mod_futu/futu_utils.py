@@ -14,12 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#默认api 的目录 openft在当前的上上级
+import path, sys
+folder = path.path(__file__).abspath()
+openft_folder = folder.parent.parent.parent
+sys.path.append(openft_folder)
+#导入futu api 库
+from  openft.open_quant_context import *
+
 from datetime import timedelta
 from rqalpha.const import RUN_TYPE, PERSIST_MODE
 from rqalpha.environment import Environment
+from enum import Enum
+from time import sleep
 import re
 import six
 
+
+#配置市场: 是否A股
 def IsFutuMarket_CNStock():
     mkt = ["SH", "SZ"]
     cfg = Environment.get_instance().config.mod.futu.futu_market
@@ -30,6 +42,7 @@ def IsFutuMarket_CNStock():
             return True
     return False
 
+#配置市场: 是否港股股票
 def IsFutuMarket_HKStock():
     mkt = ["HK"]
     cfg = Environment.get_instance().config.mod.futu.futu_market
@@ -40,6 +53,7 @@ def IsFutuMarket_HKStock():
             return True
     return False
 
+#配置市场: 是否美股股票
 def IsFutuMarket_USStock():
     mkt = ["US"]
     cfg = Environment.get_instance().config.mod.futu.futu_market
@@ -50,6 +64,7 @@ def IsFutuMarket_USStock():
             return True
     return False
 
+#配置市场: 检查是否合法
 def CheckFutuMarketConfig():
     mkts = 0
     if IsFutuMarket_CNStock():
@@ -63,6 +78,7 @@ def CheckFutuMarketConfig():
         raise RuntimeError("futu_market config err:{}".format(cfg))
 
 
+#配置runtype: 检查是否api能支持
 def CheckRunTypeConfig():
     run_type = Environment.get_instance().config.base.run_type
     if run_type == RUN_TYPE.PAPER_TRADING:
@@ -88,5 +104,4 @@ def IsRuntype_RealtimeStrategy():
 def IsRuntype_RealTrade():
     run_type = Environment.get_instance().config.base.run_type
     return run_type == RUN_TYPE.LIVE_TRADING
-
 

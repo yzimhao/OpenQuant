@@ -1,13 +1,22 @@
 from rqalpha.interface import AbstractMod
 from .futu_utils import *
 from .rqalpha_simulate_broker import RQSimulateBroker
-from .futu_event_source import FUTUEventSource
+from .futu_event_source import *
 from .futu_broker_hk import FUTUBrokerHK
+from .futu_market_state import FUTUMarketStateSource
 
 class FUTUMod(AbstractMod):
+    _futu_mod = None
     def __init__(self):
+        FUTUMod._futu_mod = self
         self._env = None
         self._mod_config = None
+        self._quote_context = None
+        self._market_state_source = None
+
+    @classmethod
+    def get_instance(cls):
+        return FUTUMod._futu_mod
 
     def start_up(self, env, mod_config):
         self._env = env
@@ -24,16 +33,15 @@ class FUTUMod(AbstractMod):
         #futu api对接，只能支持港美股的实盘和港股的仿真
         CheckRunTypeConfig()
 
-        ip = mod_config.api_svr.ip
-        port = mod_config.api_svr.port
+        #初始化api行情对象
+        self._init_quote_context()
+        self._market_state_source = FUTUMarketStateSource(self._env, self._quote_context)
 
         #替换关键组件
         self._set_broker()
+        self._set_data_source()
         self._set_event_source()
-        #self._set_data_source()
-
         print(">>> FUTUMod.start_up")
-        pass
 
     def tear_down(self, success, exception=None):
         print(">>> FUTUMod.tear_down")
@@ -53,9 +61,20 @@ class FUTUMod(AbstractMod):
             raise RuntimeError("_set_broker err param")
 
     def _set_event_source(self):
-        event_source = FUTUEventSource(self._env, self._env.config.base.account_list)
-        self._env.set_event_source(event_source)
-        pass
+        if IsRuntype_Backtest():
+            event_source = FUTUEventForBacktest(self._env, self._env.config.base.account_list)
+            self._env.set_event_source(event_source)
+        elif IsRuntype_RealtimeStrategy():
+            event_source = FUTUEventForRealtime(self._env, self._mod_config, self._market_state_source)
+            self._env.set_event_source(event_source)
+        else:
+            raise RuntimeError("_set_event_source err param")
 
     def _set_data_source(self):
         pass
+
+    def _init_quote_context(self):
+        self._mod_config.api_svr.ip = '119.29.141.202'
+        self._mod_config.api_svr.port = 11111
+        self._quote_context = OpenQuoteContext(str(self._mod_config.api_svr.ip), int(self._mod_config.api_svr.port))
+

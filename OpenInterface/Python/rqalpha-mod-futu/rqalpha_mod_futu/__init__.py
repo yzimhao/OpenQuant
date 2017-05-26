@@ -14,13 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#默认api 的目录 openft在当前的上上级
-import path, sys
-folder = path.path(__file__).abspath()
-openft_folder = folder.parent.parent.parent
-sys.path.append(openft_folder)
-#导入futu api 库
-from  openft.open_quant_context import *
 
 __config__ = {
     "api_svr":
@@ -38,10 +31,8 @@ __config__ = {
     #策略对应的股票市场, 不同的大市场目前不能同时存在, 如 "HK" 与"US"
     "futu_market": ("HK"),  #("SH", "SZ")| ("HK") | ("US")
 
-    #交易类型:  "futu_real" 富途真实交易, 仅支持 "HK" , "US"
-            # "futu_simulate" 富途仿真交易, 仅支持 "HK"
-            # "rqalpha_backtest"  rqalpha自带的回测交易模块
-    "futu_trade_type": "futu_real",  #"futu_simulate", "rqalpha_broker",
+    #实时策略在盘中handle_bar间隔多少秒触发一次
+    "futu_bar_fps": 1.0,
 
     "rqalpha_broker_config":
     {
