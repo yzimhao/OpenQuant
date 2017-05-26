@@ -1,36 +1,61 @@
 from rqalpha.interface import AbstractMod
-
+from .futu_utils import *
+from .rqalpha_simulate_broker import RQSimulateBroker
+from .futu_event_source import FUTUEventSource
+from .futu_broker_hk import FUTUBrokerHK
 
 class FUTUMod(AbstractMod):
     def __init__(self):
         self._env = None
+        self._mod_config = None
 
     def start_up(self, env, mod_config):
         self._env = env
+        self._mod_config = mod_config
 
         #需要在用户的策略脚本中配置不加载mod_sys_simulation
         if self._env.config.mod.sys_simulation.enabled != False or self._env.broker != None or self._env.event_source != None:
-            raise RuntimeError("请在脚本中配置config: 'mod':'sys_simulation':{'enabled': False,} ")
+            raise RuntimeError("请在策略脚本中增加config, {'mod':'sys_simulation':{'enabled': False,} } ")
 
-        from .rqalpha_simulate_broker import RQSimulateBroker
-        from .futu_event_source import FUTUEventSource
+        #检查市场配置参数: 一个策略脚本只针对一个市场
+        CheckFutuMarketConfig()
+
+        #runtype有三种 ： 回测、实盘交易、仿真交易
+        #futu api对接，只能支持港美股的实盘和港股的仿真
+        CheckRunTypeConfig()
 
         ip = mod_config.api_svr.ip
         port = mod_config.api_svr.port
-        per = mod_config.rqalpha_broker_config.volume_percent
 
-        #替换默认Broker
-        config_RQBroker = mod_config.rqalpha_broker_config
-        RQBroker = RQSimulateBroker(self._env, config_RQBroker)
-        self._env.set_broker(RQBroker)
-
-        #替换默认EventSource
-        event_source = FUTUEventSource(env, env.config.base.account_list)
-        env.set_event_source(event_source)
+        #替换关键组件
+        self._set_broker()
+        self._set_event_source()
+        #self._set_data_source()
 
         print(">>> FUTUMod.start_up")
         pass
 
     def tear_down(self, success, exception=None):
         print(">>> FUTUMod.tear_down")
+        pass
+
+    def _set_broker(self):
+        if IsRuntype_Backtest():
+            config_broker = mod_config.rqalpha_broker_config
+            self._env.set_broker(RQSimulateBroker(self._env, config_broker))
+        elif IsRuntype_RealtimeStrategy():
+            if IsFutuMarket_HKStock():  # 港股实时策略
+                broker = FUTUBrokerHK(self._env, self._mod_config)
+                self._env.set_broker(broker)
+            elif IsFutuMarket_USStock():  # 美股实时策略
+                raise RuntimeError("_set_broker no impl")
+        else:
+            raise RuntimeError("_set_broker err param")
+
+    def _set_event_source(self):
+        event_source = FUTUEventSource(self._env, self._env.config.base.account_list)
+        self._env.set_event_source(event_source)
+        pass
+
+    def _set_data_source(self):
         pass

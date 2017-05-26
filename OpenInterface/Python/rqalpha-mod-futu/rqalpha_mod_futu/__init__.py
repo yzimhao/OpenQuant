@@ -36,7 +36,7 @@ __config__ = {
     },
 
     #策略对应的股票市场, 不同的大市场目前不能同时存在, 如 "HK" 与"US"
-    "futu_market":  ("SH", "SZ"), #("HK") | ("US")
+    "futu_market": ("HK"),  #("SH", "SZ")| ("HK") | ("US")
 
     #交易类型:  "futu_real" 富途真实交易, 仅支持 "HK" , "US"
             # "futu_simulate" 富途仿真交易, 仅支持 "HK"
