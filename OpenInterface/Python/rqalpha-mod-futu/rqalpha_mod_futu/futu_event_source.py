@@ -73,7 +73,6 @@ class FUTUEventForRealtime(AbstractEventSource):
             return False
 
         while True:
-            sleep(0.01)
             now = datetime.now()
             if in_trading_time(now):
                 self._time_period = TimePeriod.TRADING
@@ -103,7 +102,6 @@ class FUTUEventForRealtime(AbstractEventSource):
         mark_time_thread.setDaemon(True)
         mark_time_thread.start()
         while True:
-            sleep(0.01)
             if self._time_period == TimePeriod.BEFORE_TRADING:
                 if self._after_trading_processed:
                     self._after_trading_processed = False
@@ -113,6 +111,7 @@ class FUTUEventForRealtime(AbstractEventSource):
                     self._before_trading_processed = True
                     continue
                 else:
+                    sleep(0.01)
                     continue
             elif self._time_period == TimePeriod.TRADING:
                 now_dt = datetime.now()
@@ -128,6 +127,8 @@ class FUTUEventForRealtime(AbstractEventSource):
                     if fire_bar:
                         system_log.debug("FUTUEventForRealtime: BAR event")
                         yield Event(EVENT.BAR, calendar_dt=now_dt, trading_dt=now_dt)
+                    else:
+                        sleep(0.01)
                     continue
             elif self._time_period == TimePeriod.AFTER_TRADING:
                 if self._before_trading_processed:
@@ -137,4 +138,5 @@ class FUTUEventForRealtime(AbstractEventSource):
                     yield Event(EVENT.AFTER_TRADING, calendar_dt=datetime.now(), trading_dt=datetime.now())
                     self._after_trading_processed = True
                 else:
+                    sleep(0.01)
                     continue
