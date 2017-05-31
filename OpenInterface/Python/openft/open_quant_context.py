@@ -901,6 +901,17 @@ class OpenQuoteContext:
 
         return RET_OK, orderbook
 
+    def get_global_state(self):
+        query_processor = self._get_sync_query_processor(GlobalStateQuery.pack_req,
+                                                         GlobalStateQuery.unpack_rsp)
+        kargs = {"state_type": 0}
+
+        ret_code, msg, state_dict = query_processor(**kargs)
+
+        if ret_code != RET_OK:
+            return ret_code, msg
+
+        return RET_OK, state_dict
 
 class OpenHKTradeContext:
     cookie = 100000
