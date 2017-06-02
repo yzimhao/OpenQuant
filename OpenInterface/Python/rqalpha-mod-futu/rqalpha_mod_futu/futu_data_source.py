@@ -53,10 +53,6 @@ class FUTUDataSource(AbstractDataSource):
         del ret_data['lot_size'], ret_data['stock_child_type'], ret_data['owner_stock_code']  # 删除多余的列
         ret_data.reset_index(drop=True)
 
-        for i in range(len(ret_data['code'])):     # 修改order_book_id类型
-            market, code = ret_data.loc[i, 'code'].split('.')
-            ret_data.loc[i, 'code'] = '.'.join([code, market])
-
         ret_data['de_listed_date'] = str("2999-12-31")  # 增加一列退市日期
 
         ret_data.rename(
@@ -89,17 +85,15 @@ class FUTUDataSource(AbstractDataSource):
         current_time = str(current).replace('-', '')
         dt_time = str(dt.date()).replace('-', '')
         base = Environment.get_instance().config.base
-        code, market = instrument.order_book_id.split('.')
-        order_book_id = '.'.join([market, code])
 
         if dt_time == current_time:   # 判断时间是否是当天，注意格式转换
-            ret_code, bar_data = self._quote_context.get_cur_kline(order_book_id, num=10, ktype='K_DAY')
+            ret_code, bar_data = self._quote_context.get_cur_kline(instrument.order_book_id, num=10, ktype='K_DAY')
         elif dt_time < current_time:
-            ret_code, bar_data = self._quote_context.get_history_kline(order_book_id,
+            ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
                                                                        start=base.start_date.strftime('%Y-%m-%d'),
                                                                        end=dt.strftime('%Y-%m-%d'), ktype='K_DAY')
         elif dt_time > current_time:
-            ret_code, bar_data = self._quote_context.get_history_kline(order_book_id,
+            ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
                                                                        start=base.start_date.strftime('%Y-%m-%d'),
                                                                        end=current.strftime('%Y-%m-%d'), ktype='K_DAY')
         if ret_code == -1 or bar_data is None:
@@ -159,10 +153,7 @@ class FUTUDataSource(AbstractDataSource):
             dt.replace(hour=0, minute=0, second=0, microsecond=0)) - bar_count + 1
         start_dt = self.get_trading_calendar()[start_dt_loc]
 
-        code, market = instrument.order_book_id.split('.')
-        order_book_id = '.'.join([market, code])
-
-        ret_code, bar_data = self._quote_context.get_history_kline(order_book_id, start=start_dt,
+        ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id, start=start_dt,
                                                                    end=dt.strftime('%Y-%m-%d'), ktype='K_DAY')
         if ret_code == -1 or bar_data is None or bar_data.empty:
             raise NotImplementedError
