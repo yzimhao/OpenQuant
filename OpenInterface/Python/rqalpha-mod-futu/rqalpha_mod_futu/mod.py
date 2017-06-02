@@ -4,6 +4,7 @@ from .rqalpha_simulate_broker import RQSimulateBroker
 from .futu_event_source import *
 from .futu_broker_hk import FUTUBrokerHK
 from .futu_market_state import FUTUMarketStateSource
+from .futu_data_source import FUTUDataSource
 
 class FUTUMod(AbstractMod):
     _futu_mod = None
@@ -49,7 +50,7 @@ class FUTUMod(AbstractMod):
 
     def _set_broker(self):
         if IsRuntype_Backtest():
-            config_broker = mod_config.rqalpha_broker_config
+            config_broker = self._mod_config.rqalpha_broker_config
             self._env.set_broker(RQSimulateBroker(self._env, config_broker))
         elif IsRuntype_RealtimeStrategy():
             if IsFutuMarket_HKStock():  # 港股实时策略
@@ -71,11 +72,15 @@ class FUTUMod(AbstractMod):
             raise RuntimeError("_set_event_source err param")
 
     def _set_data_source(self):
-        pass
+        if IsRuntype_Backtest():
+            data_source = FUTUDataSource(self._env, self._init_quote_context())
+            self._env.set_data_source(data_source)
+        else:
+            raise RuntimeError("_set_data_source err param")
 
     def _init_quote_context(self):
-        #for debug
-        self._mod_config.api_svr.ip ='127.0.0.1' #'119.29.141.202' #'127.0.0.1' #
+        self._mod_config.api_svr.ip = '119.29.141.202'
         self._mod_config.api_svr.port = 11111
         self._quote_context = OpenQuoteContext(str(self._mod_config.api_svr.ip), int(self._mod_config.api_svr.port))
+        return self._quote_context
 
