@@ -7,7 +7,7 @@ def log_cash(context, bar_dict):
 
 def init(context):
     logger.info("init")
-    context.s1 = "00700.HK"
+    context.s1 = "HK.00700"
     #context.s1 = "000001.HK"
     update_universe(context.s1)
     # 是否已发送了order
@@ -34,7 +34,7 @@ def handle_bar(context, bar_dict):
     # TODO: 开始编写你的算法吧！
     if not context.fired:
         # order_percent并且传入1代表买入该股票并且使其占有投资组合的100%
-        #order_percent("HK.00700", 1)
+        #order_percent(context.s1, 1)
         context.fired = True
     #else: #elif 10 == context.days:
         #portTmp = context.portfolio

@@ -72,16 +72,13 @@ class FUTUMod(AbstractMod):
             raise RuntimeError("_set_event_source err param")
 
     def _set_data_source(self):
-        if IsRuntype_Backtest():
-            data_source = FUTUDataSource(self._env, self._init_quote_context())
-            self._env.set_data_source(data_source)
-        else:
+        data_source = FUTUDataSource(self._env, self._init_quote_context())  # 支持回测和实时
+        if data_source is None:
             raise RuntimeError("_set_data_source err param")
+        self._env.set_data_source(data_source)
 
     def _init_quote_context(self):
-        # for debug
-        self._mod_config.api_svr.ip = '119.29.141.202'  # 127.0.0.1
+        self._mod_config.api_svr.ip = '119.29.141.202'
         self._mod_config.api_svr.port = 11111
         self._quote_context = OpenQuoteContext(str(self._mod_config.api_svr.ip), int(self._mod_config.api_svr.port))
-        return self._quote_context       # add
 
