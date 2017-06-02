@@ -292,7 +292,10 @@ class BrokerTest(BrokerHandlerBase):
 
 if __name__ == "__main__":
 
+    #quote_context = OpenQuoteContext(host='119.29.141.202', async_port=11111)
     quote_context = OpenQuoteContext(host='127.0.0.1', async_port=11111)
+
+    #print(quote_context.get_stock_basicinfo("HK"))
 
     # 获取推送数据
     quote_context.subscribe('HK.00700', "QUOTE", push=True)
@@ -315,7 +318,7 @@ if __name__ == "__main__":
     quote_context.start()
 
     # 获取实时数据
-    _example_stock_quote(quote_context)
+    #_example_stock_quote(quote_context)
     # _example_get_market_snapshot(quote_context)
     # _example_cur_kline(quote_context)
     # _example_rt_ticker(quote_context)

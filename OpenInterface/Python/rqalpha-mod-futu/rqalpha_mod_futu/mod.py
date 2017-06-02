@@ -74,7 +74,8 @@ class FUTUMod(AbstractMod):
         pass
 
     def _init_quote_context(self):
-        self._mod_config.api_svr.ip = '127.0.0.1' #119.29.141.202'
+        #for debug
+        self._mod_config.api_svr.ip ='127.0.0.1' #'119.29.141.202' #'127.0.0.1' #
         self._mod_config.api_svr.port = 11111
         self._quote_context = OpenQuoteContext(str(self._mod_config.api_svr.ip), int(self._mod_config.api_svr.port))
 

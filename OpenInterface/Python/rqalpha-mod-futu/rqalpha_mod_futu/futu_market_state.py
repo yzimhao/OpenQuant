@@ -81,7 +81,7 @@ class FUTUMarketStateSource(object):
             if ret == 0:
                 mkt_val = int(state_dict[self._mkt_key])
                 if mkt_val in self._mkt_dic.keys():
-                    self._market_state =  self._mkt_dic[mkt_val]
+                    self._market_state = self._mkt_dic[mkt_val]
                 else:
                     err_log = "Unkown market state: {}".format(mkt_val)
                     system_log.error(err_log)
