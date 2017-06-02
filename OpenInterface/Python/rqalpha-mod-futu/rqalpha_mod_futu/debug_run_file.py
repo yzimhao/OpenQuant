@@ -9,7 +9,7 @@ config = {
     "end_date": "2017-06-10",
     "securities": ['stock'],
     "stock_starting_cash": 100000,
-    "benchmark": "000300.XSHG",
+    "benchmark": "00700.HK",
     "frequency": "1d",
     # 运行类型，`b` 为历史数据回测，`p` 为实时数据模拟交易, `r` 为实时数据实盘交易。
     "run_type":  "p",
@@ -28,7 +28,7 @@ config = {
     },
     "sys_stock_realtime":
     {
-      'enabled' : False,
+      'enabled': False,
     },
   }
 }

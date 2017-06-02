@@ -7,7 +7,7 @@ def log_cash(context, bar_dict):
 
 def init(context):
     logger.info("init")
-    context.s1 = "000001.XSHE"
+    context.s1 = "00700.HK"
     #context.s1 = "000001.HK"
     update_universe(context.s1)
     # 是否已发送了order
