@@ -64,27 +64,32 @@ class FUTUMarketStateSource(object):
         else:
             raise RuntimeError("Market Error")
 
+        #启动请求一次市场状态
+        self._query_futu_market_state()
+
         # 定时请求市场状态
-        market_state_thread = Thread(target=self._mark_state_timer_query)
+        market_state_thread = Thread(target=self._thread_market_state_query)
         market_state_thread.setDaemon(True)
         market_state_thread.start()
-
 
     def get_futu_market_state(self):
         return self._market_state
 
-    def _mark_state_timer_query(self):
-        while True:
-            print("定时请求当前市场状态")
-            ret, state_dict = self._quote_context.get_global_state()
+    def _query_futu_market_state(self):
+        print("请求当前市场状态")
+        ret, state_dict = self._quote_context.get_global_state()
+        if ret == 0:
+            mkt_val = int(state_dict[self._mkt_key])
+            if mkt_val in self._mkt_dic.keys():
+                self._market_state = self._mkt_dic[mkt_val] #Futu_Market_State.MARKET_OPEN
+            else:
+                err_log = "Unkown market state: {}".format(mkt_val)
+                system_log.error(err_log)
+        return ret
 
-            if ret == 0:
-                mkt_val = int(state_dict[self._mkt_key])
-                if mkt_val in self._mkt_dic.keys():
-                    self._market_state = self._mkt_dic[mkt_val]
-                else:
-                    err_log = "Unkown market state: {}".format(mkt_val)
-                    system_log.error(err_log)
+    def _thread_market_state_query(self):
+        while True:
+            self._query_futu_market_state()
             sleep(3)
         pass
 

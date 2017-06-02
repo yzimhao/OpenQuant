@@ -142,7 +142,7 @@ class FUTUBrokerHK(AbstractBroker):
 
     def _pre_after_trading(self, event):
         #收盘时清掉未完成的订单
-        for _, order in self._open_orders:
+        for _, order in self._open_order:
             order.mark_rejected(_(u"Order Rejected: {order_book_id} can not match. Market close.").format(
                 order_book_id=order.order_book_id
             ))
