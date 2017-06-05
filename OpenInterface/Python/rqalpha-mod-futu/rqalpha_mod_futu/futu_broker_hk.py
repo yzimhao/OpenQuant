@@ -198,7 +198,8 @@ class FUTUBrokerHK(AbstractBroker):
                 trade._amount = qty_deal_new - qty_deal_last
                 order.fill(trade)
                 self._env.event_bus.publish_event(Event(EVENT.TRADE, account=account, trade=trade, order=order))
-                self._remove_open_order_by_futu_id(fid)
+                if ft_status == 3:
+                    self._remove_open_order_by_futu_id(fid)
 
             elif ft_status == 5:  # 下单失败
                 self._env.event_bus.publish_event(Event(EVENT.ORDER_CREATION_REJECT, account=account, order=order))
