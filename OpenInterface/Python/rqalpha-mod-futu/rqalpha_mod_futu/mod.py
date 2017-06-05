@@ -50,7 +50,7 @@ class FUTUMod(AbstractMod):
 
     def _set_broker(self):
         if IsRuntype_Backtest():
-            config_broker = mod_config.rqalpha_broker_config
+            config_broker = self._mod_config.rqalpha_broker_config
             self._env.set_broker(RQSimulateBroker(self._env, config_broker))
         elif IsRuntype_RealtimeStrategy():
             if IsFutuMarket_HKStock():  # 港股实时策略
@@ -81,4 +81,5 @@ class FUTUMod(AbstractMod):
         self._mod_config.api_svr.ip = '119.29.141.202'
         self._mod_config.api_svr.port = 11111
         self._quote_context = OpenQuoteContext(str(self._mod_config.api_svr.ip), int(self._mod_config.api_svr.port))
+        return self._quote_context
 

@@ -17,11 +17,8 @@
 
 from rqalpha.interface import AbstractDataSource
 from rqalpha.environment import Environment
-from rqalpha.utils.py2 import lru_cache
-from rqalpha.utils.datetime_func import convert_date_to_int, convert_int_to_date
 from rqalpha.model.instrument import Instrument
 import pandas as pd
-import numpy as np
 from datetime import date
 import datetime
 import six
@@ -31,21 +28,22 @@ class FUTUDataSource(AbstractDataSource):
     def __init__(self, env, quote_context):
         self._env = env
         self._quote_context = quote_context
+        self._quote_context.subscribe(stock_code=self._env.config.base.benchmark, data_type='K_DAY', push=False)
 
     def get_all_instruments(self):
         """
-        获取所有Instrument。---待实现
+        获取所有Instrument。
 
         :return: list[:class:`~Instrument`]
         """
-        ret_code, ret_data_cs = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
-        ret_data_cs.at[ret_data_cs.index, 'stock_type'] = 'CS'
-        ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
-        ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
-        ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
-        ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("HK", "BOND")
-        frames = [ret_data_cs, ret_data_idx, ret_data_etf, ret_data_war, ret_data_bond]
-        ret_data = pd.concat(frames).reset_index(drop=True)
+        ret_code, ret_data = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
+        # ret_data_cs.at[ret_data_cs.index, 'stock_type'] = 'CS'
+        # ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
+        # ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
+        # ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
+        # ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("HK", "BOND")
+        # frames = [ret_data_cs, ret_data_idx, ret_data_etf, ret_data_war, ret_data_bond]
+        # ret_data = pd.concat(frames).reset_index(drop=True)
 
         if ret_code == -1 or ret_data is None:
             raise NotImplementedError
@@ -79,9 +77,10 @@ class FUTUDataSource(AbstractDataSource):
         """
         if frequency != '1d':
             raise NotImplementedError
+        if dt is None:
+            dt = datetime.now().date()
 
-        # # current = datetime.datetime.now().strftime("%F")  # "2017-05-27"
-        current = datetime.datetime.now().date()  # 2017-05-27
+        current = date.today()   # TODO
         current_time = str(current).replace('-', '')
         dt_time = str(dt.date()).replace('-', '')
         base = Environment.get_instance().config.base
@@ -99,19 +98,20 @@ class FUTUDataSource(AbstractDataSource):
         if ret_code == -1 or bar_data is None:
             raise NotImplementedError
 
-        bar_data = bar_data.drop('code', axis=1)  # 去掉code
+        del bar_data['code']  # 去掉code
 
-        ret_data_time = [ret_data_time.replace('-', '').replace(' ', '').replace(':', '')
-                         for ret_data_time in bar_data['time_key']]
-        bar_data['time_key'] = ret_data_time   # 转换时间格式
+        for i in range(len(bar_data['time_key'])):     # 时间转换
+            bar_data.iloc[i] = int(bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
+
         bar_data.rename(columns={'time_key': 'datetime', 'turnover': 'total_turnover'}, inplace=True)  # 将字段名称改为一致的
 
-        return bar_data.values[:, :]
+        ret_dict = bar_data[bar_data.datetime <= int(dt_time + "000000")].iloc[-1].to_dict()
+        return ret_dict
 
     def history_bars(self, instrument, bar_count, frequency, fields, dt, skip_suspended=True,
                      include_now=False, adjust_type='pre', adjust_orig=None):
         """
-        获取历史数据   ---待实现
+        获取历史数据
 
         :param instrument: 合约对象
         :type instrument: :class:`~Instrument`
@@ -149,9 +149,9 @@ class FUTUDataSource(AbstractDataSource):
         if frequency != '1d' or not skip_suspended:
             raise NotImplementedError
 
-        start_dt_loc = self.get_trading_calendar().get_loc(
-            dt.replace(hour=0, minute=0, second=0, microsecond=0)) - bar_count + 1
-        start_dt = self.get_trading_calendar()[start_dt_loc]
+        start_dt_loc = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        start_dt = start_dt_loc.strftime("%Y-%m-%d").replace('-', '').replace(' ', '').replace(':', '')   # 开始时间 字符串2017-06-01
+        start_dt = int(start_dt) - bar_count + 1
 
         ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id, start=start_dt,
                                                                    end=dt.strftime('%Y-%m-%d'), ktype='K_DAY')
@@ -161,7 +161,7 @@ class FUTUDataSource(AbstractDataSource):
             if isinstance(fields, six.string_types):
                 fields = [fields]
 
-            bar_data = bar_data.drop('code', axis=1)  # 去掉code
+            del bar_data['code']   # 去掉code
 
             ret_data_time = [ret_data_time.replace('-', '').replace(' ', '').replace(':', '')
                              for ret_data_time in bar_data['time_key']]
@@ -238,7 +238,7 @@ class FUTUDataSource(AbstractDataSource):
 
         :return: pandas.DataFrame, [start_date, end_date]
         """
-        raise NotImplementedError
+        return None
 
     def get_dividend(self, order_book_id):
         """
