@@ -512,6 +512,9 @@ class OpenQuoteContext:
             error_str = ERROR_STR_PREFIX + "the type of end param is wrong"
             return RET_ERROR, error_str
 
+        if autype is None:
+            autype = 'None'
+
         param_table = {'code': code, 'ktype': ktype, 'autype': autype}
         for x in param_table:
             param = param_table[x]
@@ -913,6 +916,7 @@ class OpenQuoteContext:
             return ret_code, msg
 
         return RET_OK, state_dict
+
 
 class OpenHKTradeContext:
     cookie = 100000

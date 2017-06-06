@@ -72,7 +72,7 @@ ktype_map = {"K_1M":     1,
 
 rev_ktype_map = {ktype_map[x]: x for x in ktype_map}
 
-autype_map = {None: 0,
+autype_map = {'None': 0,
               "qfq": 1,
               "hfq": 2
               }
