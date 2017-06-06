@@ -18,6 +18,7 @@
 from rqalpha.interface import AbstractDataSource
 from rqalpha.environment import Environment
 from rqalpha.model.instrument import Instrument
+import futu_utils
 import pandas as pd
 from datetime import date
 import datetime
@@ -100,8 +101,8 @@ class FUTUDataSource(AbstractDataSource):
 
         del bar_data['code']  # 去掉code
 
-        for i in range(len(bar_data['time_key'])):     # 时间转换 ---有warning
-            bar_data['time_key'][i] = int(bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
+        for i in range(len(bar_data['time_key'])):     # 时间转换
+            bar_data.loc[i, 'time_key'] = int(bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
 
         bar_data.rename(columns={'time_key': 'datetime', 'turnover': 'total_turnover'}, inplace=True)  # 将字段名称改为一致的
 
