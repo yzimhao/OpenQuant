@@ -37,7 +37,7 @@ class FUTUDataSource(AbstractDataSource):
         :return: list[:class:`~Instrument`]
         """
         ret_code, ret_data = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
-        # ret_data_cs.at[ret_data_cs.index, 'stock_type'] = 'CS'
+        ret_data.at[ret_data.index, 'stock_type'] = 'CS'
         # ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
         # ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
         # ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
@@ -100,8 +100,8 @@ class FUTUDataSource(AbstractDataSource):
 
         del bar_data['code']  # 去掉code
 
-        for i in range(len(bar_data['time_key'])):     # 时间转换
-            bar_data.iloc[i] = int(bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
+        for i in range(len(bar_data['time_key'])):     # 时间转换 ---有warning
+            bar_data['time_key'][i] = int(bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
 
         bar_data.rename(columns={'time_key': 'datetime', 'turnover': 'total_turnover'}, inplace=True)  # 将字段名称改为一致的
 
@@ -247,7 +247,7 @@ class FUTUDataSource(AbstractDataSource):
         :param str order_book_id: 合约名
         :return:
         """
-        raise NotImplementedError
+        return None
 
     def get_split(self, order_book_id):
         """
@@ -258,7 +258,7 @@ class FUTUDataSource(AbstractDataSource):
         :return: `pandas.DataFrame`
         """
 
-        raise NotImplementedError
+        return None
 
     def get_settle_price(self, instrument, date):
         """
