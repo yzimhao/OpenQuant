@@ -597,7 +597,7 @@ class OpenQuoteContext:
                     'wrt_conversion_ratio', 'wrt_type', 'wrt_strike_price',
                     'wrt_maturity_date', 'wrt_end_trade', 'wrt_code',
                     'wrt_recovery_price', 'wrt_street_vol', 'wrt_issue_vol',
-                    'wrt_street_ratio', 'wrt_delta', 'wrt_implied_volatility', 'wrt_premium'
+                    'wrt_street_ratio', 'wrt_delta', 'wrt_implied_volatility', 'wrt_premium','lot_size'
                     ]
 
         snapshot_frame_table = pd.DataFrame(snapshot_list, columns=col_list)
