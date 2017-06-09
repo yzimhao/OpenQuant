@@ -4,7 +4,8 @@ from .rqalpha_simulate_broker import RQSimulateBroker
 from .futu_event_source import *
 from .futu_broker_hk import FUTUBrokerHK
 from .futu_market_state import FUTUMarketStateSource
-from .futu_data_source import FUTUDataSource
+from .futu_data_source import FUTUDataSource, DataCache
+
 
 class FUTUMod(AbstractMod):
     _futu_mod = None
@@ -22,6 +23,7 @@ class FUTUMod(AbstractMod):
     def start_up(self, env, mod_config):
         self._env = env
         self._mod_config = mod_config
+        self._data_cache = DataCache()
 
         #需要在用户的策略脚本中配置不加载mod_sys_simulation
         if self._env.config.mod.sys_simulation.enabled != False or self._env.broker != None or self._env.event_source != None:
@@ -72,7 +74,7 @@ class FUTUMod(AbstractMod):
             raise RuntimeError("_set_event_source err param")
 
     def _set_data_source(self):
-        data_source = FUTUDataSource(self._env, self._init_quote_context())  # 支持回测和实时
+        data_source = FUTUDataSource(self._env, self._init_quote_context(), self._data_cache)  # 支持回测和实时
         if data_source is None:
             raise RuntimeError("_set_data_source err param")
         self._env.set_data_source(data_source)
