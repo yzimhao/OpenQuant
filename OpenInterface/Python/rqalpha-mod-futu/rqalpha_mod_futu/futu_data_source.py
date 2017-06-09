@@ -18,10 +18,11 @@
 from rqalpha.interface import AbstractDataSource
 from rqalpha.environment import Environment
 from rqalpha.model.instrument import Instrument
-import futu_utils
+from .futu_utils import *
 import pandas as pd
 from datetime import date
 import datetime
+import time
 import six
 
 
@@ -37,25 +38,36 @@ class FUTUDataSource(AbstractDataSource):
 
         :return: list[:class:`~Instrument`]
         """
-        ret_code, ret_data = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
-        ret_data.at[ret_data.index, 'stock_type'] = 'CS'
-        # ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
-        # ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
-        # ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
-        # ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("HK", "BOND")
-        # frames = [ret_data_cs, ret_data_idx, ret_data_etf, ret_data_war, ret_data_bond]
-        # ret_data = pd.concat(frames).reset_index(drop=True)
+        if IsFutuMarket_HKStock() is True:
+            ret_code, ret_data = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
+            ret_data.at[ret_data.index, 'stock_type'] = 'CS'
+            # ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
+            # ret_data_idx.at[ret_data_idx, 'stock_type'] = 'INDX'
+            # ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
+            # ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
+            # ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("HK", "BOND")
+            # frames = [ret_data_cs, ret_data_idx, ret_data_etf, ret_data_war, ret_data_bond]
+            # ret_data = pd.concat(frames).reset_index(drop=True)
+
+        elif IsFutuMarket_USStock() is True:
+            ret_code, ret_data_cs = self._quote_context.get_stock_basicinfo(market="US", stock_type="STOCK")
+            ret_data_cs.at[ret_data_cs.index, 'stock_type'] = 'CS'
+            ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo(market="US", stock_type="IDX")
+            ret_data_idx.at[ret_data_idx.index, 'stock_type'] = 'INDX'
+            ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo(market="US", stock_type="ETF")
+            frames = [ret_data_cs, ret_data_idx, ret_data_etf]
+            ret_data = pd.concat(frames).reset_index(drop=True)
 
         if ret_code == -1 or ret_data is None:
             raise NotImplementedError
 
-        del ret_data['lot_size'], ret_data['stock_child_type'], ret_data['owner_stock_code']  # 删除多余的列
+        del ret_data['stock_child_type'], ret_data['owner_stock_code']  # 删除多余的列
         ret_data.reset_index(drop=True)
 
         ret_data['de_listed_date'] = str("2999-12-31")  # 增加一列退市日期
 
         ret_data.rename(
-            columns={'code': 'order_book_id', 'name': 'symbol', 'stock_type': 'type', 'listing_date': 'listed_date'},
+            columns={'code': 'order_book_id', 'name': 'symbol', 'stock_type': 'type', 'listing_date': 'listed_date', 'lot_size': 'round_lot'},
             inplace=True)  # 修改列名
 
         stock_basicinfo = ret_data.to_dict(orient='records')    # 转置并转为字典格式
@@ -164,9 +176,9 @@ class FUTUDataSource(AbstractDataSource):
 
             del bar_data['code']   # 去掉code
 
-            ret_data_time = [ret_data_time.replace('-', '').replace(' ', '').replace(':', '')
-                             for ret_data_time in bar_data['time_key']]
-            bar_data['time_key'] = ret_data_time  # 转换时间格式
+            for i in range(len(bar_data['time_key'])):  # 时间转换
+                bar_data.loc[i, 'time_key'] = int(bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
+
             bar_data.rename(columns={'time_key': 'datetime', 'turnover': 'total_turnover'}, inplace=True)  # 将字段名称改为一致的
 
             fields = [field for field in fields if field in bar_data.columns]
@@ -219,6 +231,27 @@ class FUTUDataSource(AbstractDataSource):
         # e = date.fromtimestamp(30999999999)
         e = date.today()
         return s, e
+
+    def is_suspended(self, order_book_id, dates):
+        #  用市场快照 判断一只股票是否停牌
+        if IsRuntype_Backtest() is True:   # 回测
+            return [(False) for d in dates]
+        elif IsRuntype_RealTrade() is False:  # 实盘
+            result = []
+            for i in range(len(dates)):
+                date_time = dates[i].strftime("%Y-%m-%d")
+                ret_code, ret_data = self._quote_context.get_market_snapshot([order_book_id])
+                if len(dates) != 1:
+                    time.sleep(5)
+                if date_time in str(ret_data['update_time'])[5:15]:
+                    if str(ret_data['suspension'])[5:10] == 'False':
+                        result[i] = False
+                    elif str(ret_data['suspension'])[5:10] == 'True':
+                        result[i] = True
+
+                if ret_data is None or date_time not in ret_data['update_time'][5:15]:
+                    result[i] = True
+            return result
 
     def get_trading_minutes_for(self, order_book_id, trading_dt):
         """
@@ -301,3 +334,5 @@ class FUTUDataSource(AbstractDataSource):
         :return: Tick
         """
         raise NotImplementedError
+
+
