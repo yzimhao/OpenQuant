@@ -171,10 +171,11 @@ class FUTUDataSource(AbstractDataSource):
         current = date.today()
         current_time = str(current).replace('-', '')
         dt_time = str(dt.date()).replace('-', '')
+        dt_datetime = int(dt_time + "000000")
         base = Environment.get_instance().config.base
 
         if dt_time == current_time:  # 判断时间是否是当天，注意格式转换
-            if self._cache['cur_kline'] is None:  #判断条件应该是当前日期不在缓存里
+            if self._cache['cur_kline'] is None or int(self._cache['cur_kline']['datetime']) != dt_datetime:
                 ret_code, bar_data = self._quote_context.get_cur_kline(instrument.order_book_id, num=10, ktype='K_DAY')
                 if ret_code == -1 or bar_data is None:
                     for i in range(3):
@@ -184,12 +185,12 @@ class FUTUDataSource(AbstractDataSource):
                             return ret_code, bar_data
                         else:
                             time.sleep(0.1)
-                    self._cache['cur_kline'] = bar_data
+                self._cache['cur_kline'] = bar_data
             else:
                 ret_code, bar_data = 0, self._cache['cur_kline']
 
         elif dt_time < current_time:
-            if self._cache['history_kline'] is None:   #判断条件应该是当前日期不在缓存里
+            if self._cache['history_kline'] is None or int(self._cache['history_kline']['datetime']) != dt_datetime:
                 ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
                                                                            start=base.start_date.strftime('%Y-%m-%d'),
                                                                            end=dt.strftime('%Y-%m-%d'), ktype='K_DAY')
@@ -204,12 +205,12 @@ class FUTUDataSource(AbstractDataSource):
                             return ret_code, bar_data
                         else:
                             time.sleep(0.1)
-                    self._cache['history_kline'] = bar_data
+                self._cache['history_kline'] = bar_data
             else:
                 ret_code, bar_data = 0, self._cache['history_kline']
 
         elif dt_time > current_time:
-            if self._cache['history'] is None:  #判断条件应该是当前日期不在缓存里
+            if self._cache['history'] is None or int(self._cache['history']['datetime']) != dt_datetime:
                 ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
                                                                            start=base.start_date.strftime('%Y-%m-%d'),
                                                                            end=current.strftime('%Y-%m-%d'),
@@ -225,7 +226,7 @@ class FUTUDataSource(AbstractDataSource):
                             return ret_code, bar_data
                         else:
                             time.sleep(0.1)
-                    self._cache['history_kline'] = bar_data
+                self._cache['history_kline'] = bar_data
             else:
                 ret_code, bar_data = 0, self._cache['history_kline']
 
@@ -287,11 +288,13 @@ class FUTUDataSource(AbstractDataSource):
 
         self.is_today(dt)
 
+        dt_time = int(str(dt.date()).replace('-', '') + "000000")
+
         start_dt_loc = dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        start_dt = start_dt_loc.strftime("%Y-%m-%d").replace('-', '').replace(' ', '').replace(':', '')   # 开始时间 字符串2017-06-01
+        start_dt = start_dt_loc.strftime("%Y-%m-%d").replace('-', '').replace(' ', '').replace(':', '')
         start_dt = int(start_dt) - bar_count + 1
 
-        if self._cache['history'] is None:  # 判断条件应该是当前日期不在缓存里
+        if self._cache['history_kline'] is None or int(self._cache['history_kline']['datetime']) != dt_time:
             ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id, start=start_dt,
                                                                        end=dt.strftime('%Y-%m-%d'), ktype='K_DAY')
             if ret_code == -1 or bar_data is None:
@@ -303,6 +306,7 @@ class FUTUDataSource(AbstractDataSource):
                         return ret_code, bar_data
                     else:
                         time.sleep(0.1)
+            self._cache["history_kline"] = bar_data
         else:
             ret_code, bar_data = 0, self._cache['history_kline']
 
@@ -331,7 +335,7 @@ class FUTUDataSource(AbstractDataSource):
         :return:
         """
         base = self._env.config.base
-        if self._cache["trading_days"] is None:   #base里的日期不在列表里
+        if self._cache["trading_days"] is None or str(base.start_date) not in self._cache["trading_days"]:
             ret_code, calendar_list = self._quote_context.get_trading_days(market="HK",
                                                                            start_date=base.start_date.strftime(
                                                                                "%Y-%m-%d"),
@@ -347,6 +351,7 @@ class FUTUDataSource(AbstractDataSource):
                         return ret_code, calendar_list
                     else:
                         time.sleep(0.1)
+            self._cache["trading_days"] = calendar_list
         else:
             ret_code, calendar_list = 0, self._cache["trading_days"]
 
@@ -392,7 +397,10 @@ class FUTUDataSource(AbstractDataSource):
         if IsRuntype_Backtest() is True:   # 回测
             return [(False) for d in dates]
         elif IsRuntype_RealTrade() is True:  # 实盘
-            if self._cache["market_snapshot"] is None:  #日期不在里面
+            dates_str = []
+            for i in dates:
+                dates_str.append(dates[i].strftime("%Y-%m-%d"))
+            if self._cache["market_snapshot"] is None or str(self._cache["market_snapshot"]['update_time'])[5:15] not in dates_str:
                 result = []
                 for i in range(len(dates)):
                     date_time = dates[i].strftime("%Y-%m-%d")
@@ -406,6 +414,7 @@ class FUTUDataSource(AbstractDataSource):
                                 return ret_code, ret_data
                             else:
                                 time.sleep(5)
+                self._cache["market_snapshot"] = ret_data
             else:
                 ret_code, ret_data = 0, self._cache["market_snapshot"]
 
@@ -524,21 +533,6 @@ class DataCache:
         self._cache["history_kline"] = None
         self._cache["trading_days"] = None
         self._cache["market_snapshot"] = None
-
-    def __contains__(self, key):
-        """
-        根据该键判断是否存在缓存中
-        """
-        return key in self._cache
-
-    def is_empty(self, key):
-        """
-        判断某个键的对应的值是否为空
-        """
-        return self._cache[key] is None
-
-    def get(self, key):
-        return self._cache[key]
 
     def remove_all(self):
         """
