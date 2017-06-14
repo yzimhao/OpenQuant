@@ -37,7 +37,7 @@ class FUTUMod(AbstractMod):
         CheckRunTypeConfig()
 
         #初始化api行情对象
-        self._init_quote_context()
+        self._quote_context = self._init_quote_context()
         self._market_state_source = FUTUMarketStateSource(self._env, self._quote_context)
 
         #替换关键组件
@@ -74,7 +74,7 @@ class FUTUMod(AbstractMod):
             raise RuntimeError("_set_event_source err param")
 
     def _set_data_source(self):
-        data_source = FUTUDataSource(self._env, self._init_quote_context(), self._data_cache)  # 支持回测和实时
+        data_source = FUTUDataSource(self._env, self._quote_context, self._data_cache)  # 支持回测和实时
         if data_source is None:
             raise RuntimeError("_set_data_source err param")
         self._env.set_data_source(data_source)
