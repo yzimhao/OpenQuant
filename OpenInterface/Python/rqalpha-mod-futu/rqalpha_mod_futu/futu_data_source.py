@@ -214,66 +214,16 @@ class FUTUDataSource(AbstractDataSource):
 
         elif dt_time != current_time:
             if self._cache['history_kline'] is None:
-                end_date = datetime.strptime('2017-12-31', '%Y-%m-%d').date()
-                last_year = timedelta(days=365)
-                bar_data = pd.DataFrame()
-                self._cache['history_kline'] = pd.DataFrame()
-                while bar_data is not None:  # TODO
-                    begin_date = end_date - last_year
-                    ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
-                                                                               start=begin_date.strftime('%Y-%m-%d'),
-                                                                               end=end_date.strftime('%Y-%m-%d'),
-                                                                               ktype='K_DAY')
-                    end_date = begin_date
-                    if ret_code == -1:
-                        for i in range(3):
-                            ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
-                                                                                       start=base.start_date.strftime(
-                                                                                           '%Y-%m-%d'),
-                                                                                       end=dt.strftime('%Y-%m-%d'),
-                                                                                       ktype='K_DAY')
-                            if ret_code != -1 and bar_data is not None:
-                                return ret_code, bar_data
-                            else:
-                                time.sleep(0.1)
-                    if ret_code == -1:
-                        print(bar_data)
-                    if bar_data.empty:
-                        return self._cache['history_kline']
-                    self._cache['history_kline'] = self._cache['history_kline'].append(bar_data)
-
+                ret_code, bar_data = 0, self.get_cache(instrument)
             else:
                 ret_code, bar_data = 0, self._cache['history_kline']
-
-        # elif dt_time > current_time:
-        #     if self._cache['history'] is None or int(self._cache['history']['datetime']) != dt_datetime:
-        #         ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
-        #                                                                    start=base.start_date.strftime('%Y-%m-%d'),
-        #                                                                    end=current.strftime('%Y-%m-%d'),
-        #                                                                    ktype='K_DAY')
-        #         if ret_code == -1 or bar_data is None:
-        #             for i in range(3):
-        #                 ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
-        #                                                                            start=base.start_date.strftime(
-        #                                                                                '%Y-%m-%d'),
-        #                                                                            end=current.strftime('%Y-%m-%d'),
-        #                                                                            ktype='K_DAY')
-        #                 if ret_code != -1 and bar_data is not None:
-        #                     return ret_code, bar_data
-        #                 else:
-        #                     time.sleep(0.1)
-        #         if ret_code == -1:
-        #             print(bar_data)
-        #         self._cache['history_kline'] = bar_data
-        #     else:
-        #         ret_code, bar_data = 0, self._cache['history_kline']
 
         if ret_code == -1 or bar_data is None:
             raise NotImplementedError
 
         del bar_data['code']  # 去掉code
 
-        for i in range(len(bar_data['time_key'])):  # 时间转换
+        for i in range(len(bar_data)):  # 时间转换
             bar_data.loc[i, 'time_key'] = int(
                 bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
 
@@ -282,6 +232,34 @@ class FUTUDataSource(AbstractDataSource):
         ret_dict = bar_data[bar_data.datetime <= int(dt_time + "000000")].iloc[-1].to_dict()
 
         return ret_dict
+
+    def get_cache(self, instrument):
+        end_date = datetime.strptime('2017-12-31', '%Y-%m-%d').date()
+        last_year = timedelta(days=365)
+        bar_data = pd.DataFrame()
+        self._cache['history_kline'] = pd.DataFrame()
+        while bar_data is not None:  # TODO
+            begin_date = end_date - last_year
+            ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
+                                                                       start=begin_date.strftime('%Y-%m-%d'),
+                                                                       end=end_date.strftime('%Y-%m-%d'),
+                                                                       ktype='K_DAY')
+            end_date = begin_date
+            if ret_code == -1:
+                for i in range(3):
+                    ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
+                                                                               start=begin_date.strftime('%Y-%m-%d'),
+                                                                               end=end_date.strftime('%Y-%m-%d'),
+                                                                               ktype='K_DAY')
+                    if ret_code != -1 and bar_data is not None:
+                        return ret_code, bar_data
+                    else:
+                        time.sleep(0.1)
+            if ret_code == -1:
+                print(bar_data)
+            if bar_data.empty:
+                return self._cache['history_kline']
+            self._cache['history_kline'] = self._cache['history_kline'].append(bar_data)
 
     def history_bars(self, instrument, bar_count, frequency, fields, dt, skip_suspended=True,
                      include_now=False, adjust_type='pre', adjust_orig=None):
