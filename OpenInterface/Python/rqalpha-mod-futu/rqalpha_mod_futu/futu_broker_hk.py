@@ -244,14 +244,14 @@ class FUTUBrokerHK(AbstractBroker):
         start_date = config.base.start_date
         total_cash = 0
         for account_type in config.base.account_list:
-            if account_type == ACCOUNT_TYPE.STOCK:
+            if account_type == DEFAULT_ACCOUNT_TYPE.STOCK:
                 stock_starting_cash = config.base.stock_starting_cash
                 if stock_starting_cash == 0:
                     raise RuntimeError(_(u"stock starting cash can not be 0, using `--stock-starting-cash 1000`"))
                 all_positons = self._get_futu_positions()
                 if all_positons is None:
                     raise RuntimeError("_init_portfolio fail")
-                accounts[ACCOUNT_TYPE.STOCK] = StockAccount(stock_starting_cash, all_positons)
+                accounts[DEFAULT_ACCOUNT_TYPE.STOCK] = StockAccount(stock_starting_cash, all_positons)
                 total_cash += stock_starting_cash
             else:
                 raise NotImplementedError
@@ -260,7 +260,7 @@ class FUTUBrokerHK(AbstractBroker):
     def _get_account(self, order_book_id):
         #account = self._env.get_account(order_book_id)
         # for debug
-        account =  self._env.portfolio.accounts[ACCOUNT_TYPE.STOCK]
+        account =  self._env.portfolio.accounts[DEFAULT_ACCOUNT_TYPE.STOCK]
         return account
 
     def _get_futu_order_id(self, order):
