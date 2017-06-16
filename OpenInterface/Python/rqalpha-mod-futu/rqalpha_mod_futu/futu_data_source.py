@@ -16,15 +16,32 @@
 # limitations under the License.
 
 from rqalpha.interface import AbstractDataSource
-from rqalpha.environment import Environment
 from rqalpha.model.instrument import Instrument
 from .futu_utils import *
 import pandas as pd
-from datetime import date
+from datetime import date, timedelta
 import datetime
 import time
 import six
 from rqalpha.events import EVENT
+#导入futu api 库
+from openft.open_quant_context import *
+
+
+class CurKlineTest(CurKlineHandlerBase):
+    def on_recv_rsp(self, rsp_str):
+        ret_code, bar_data = super(CurKlineTest, self).on_recv_rsp(rsp_str)
+        if ret_code != 0:
+            del bar_data['code']  # 去掉code
+
+            for i in range(len(bar_data['time_key'])):  # 时间转换
+                bar_data.loc[i, 'time_key'] = int(
+                    bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
+
+            bar_data.rename(columns={'time_key': 'datetime', 'turnover': 'total_turnover'}, inplace=True)  # 将字段名称改为一致的
+
+            ret_dict = bar_data.iloc[-1].to_dict()
+            return ret_dict
 
 
 class FUTUDataSource(AbstractDataSource):
@@ -42,56 +59,58 @@ class FUTUDataSource(AbstractDataSource):
         """
         if IsFutuMarket_HKStock() is True:
             if self._cache['basicinfo_hk'] is None:
-                ret_code, ret_data_cs = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
-                if ret_code == -1 or ret_data_cs is None:
+                ret_code, ret_data = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
+                if ret_code == -1 or ret_data is None:
                     for i in range(3):
-                        ret_code, ret_data_cs = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
+                        ret_code, ret_data = self._quote_context.get_stock_basicinfo(market="HK", stock_type="STOCK")
                         if ret_code != -1 and ret_code is not None:
-                            return ret_code, ret_data_cs
+                            return ret_code, ret_data
                         else:
                             time.sleep(0.1)
-                ret_data_cs.at[ret_data_cs.index, 'stock_type'] = 'CS'
+                if ret_code == -1:
+                    print(ret_data)
+                ret_data.at[ret_data.index, 'stock_type'] = 'CS'
 
-                ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
-                if ret_code == -1 or ret_data_idx is None:
-                    for i in range(3):
-                        ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
-                        if ret_code != -1 and ret_code is not None:
-                            return ret_code, ret_data_idx
-                        else:
-                            time.sleep(0.1)
-                ret_data_idx.at[ret_data_idx.index, 'stock_type'] = 'INDX'
-
-                ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
-                if ret_code == -1 or ret_data_etf is None:
-                    for i in range(3):
-                        ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
-                        if ret_code != -1 and ret_code is not None:
-                            return ret_code, ret_data_etf
-                        else:
-                            time.sleep(0.1)
-
-                ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
-                if ret_code == -1 or ret_data_war is None:
-                    for i in range(3):
-                        ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
-                        if ret_code != -1 and ret_code is not None:
-                            return ret_code, ret_data_war
-                        else:
-                            time.sleep(0.1)
-
-                ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("HK", "BOND")
-                if ret_code == -1 or ret_data_bond is None:
-                    for i in range(3):
-                        ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("HK", "BOND")
-                        if ret_code != -1 and ret_code is not None:
-                            return ret_code, ret_data_bond
-                        else:
-                            time.sleep(0.1)
-
-                frames = [ret_data_cs, ret_data_idx, ret_data_etf, ret_data_war, ret_data_bond]
-                ret_data = pd.concat(frames).reset_index(drop=True)
-                self._cache['basicinfo_hk'] = ret_data
+                # ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
+                # if ret_code == -1 or ret_data_idx is None:
+                #     for i in range(3):
+                #         ret_code, ret_data_idx = self._quote_context.get_stock_basicinfo("HK", "IDX")
+                #         if ret_code != -1 and ret_code is not None:
+                #             return ret_code, ret_data_idx
+                #         else:
+                #             time.sleep(0.1)
+                # ret_data_idx.at[ret_data_idx.index, 'stock_type'] = 'INDX'
+                #
+                # ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
+                # if ret_code == -1 or ret_data_etf is None:
+                #     for i in range(3):
+                #         ret_code, ret_data_etf = self._quote_context.get_stock_basicinfo("HK", "ETF")
+                #         if ret_code != -1 and ret_code is not None:
+                #             return ret_code, ret_data_etf
+                #         else:
+                #             time.sleep(0.1)
+                #
+                # ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
+                # if ret_code == -1 or ret_data_war is None:
+                #     for i in range(3):
+                #         ret_code, ret_data_war = self._quote_context.get_stock_basicinfo("HK", "WARRANT")
+                #         if ret_code != -1 and ret_code is not None:
+                #             return ret_code, ret_data_war
+                #         else:
+                #             time.sleep(0.1)
+                #
+                # ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("HK", "BOND")
+                # if ret_code == -1 or ret_data_bond is None:
+                #     for i in range(3):
+                #         ret_code, ret_data_bond = self._quote_context.get_stock_basicinfo("HK", "BOND")
+                #         if ret_code != -1 and ret_code is not None:
+                #             return ret_code, ret_data_bond
+                #         else:
+                #             time.sleep(0.1)
+                #
+                # frames = [ret_data_cs, ret_data_idx, ret_data_etf, ret_data_war, ret_data_bond]
+                # ret_data = pd.concat(frames).reset_index(drop=True)
+                # self._cache['basicinfo_hk'] = ret_data
             else:
                 ret_code, ret_data = 0, self._cache['basicinfo_hk']
 
@@ -171,11 +190,10 @@ class FUTUDataSource(AbstractDataSource):
         current = date.today()
         current_time = str(current).replace('-', '')
         dt_time = str(dt.date()).replace('-', '')
-        dt_datetime = int(dt_time + "000000")
         base = Environment.get_instance().config.base
 
         if dt_time == current_time:  # 判断时间是否是当天，注意格式转换
-            if self._cache['cur_kline'] is None or int(self._cache['cur_kline']['datetime']) != dt_datetime:
+            if self._cache['cur_kline'] is None:
                 ret_code, bar_data = self._quote_context.get_cur_kline(instrument.order_book_id, num=10, ktype='K_DAY')
                 if ret_code == -1 or bar_data is None:
                     for i in range(3):
@@ -186,49 +204,64 @@ class FUTUDataSource(AbstractDataSource):
                         else:
                             time.sleep(0.1)
                 self._cache['cur_kline'] = bar_data
+                # 在历史数据中加上今天的数据
+                self.update_data()
             else:
                 ret_code, bar_data = 0, self._cache['cur_kline']
 
-        elif dt_time < current_time:
-            if self._cache['history_kline'] is None or int(self._cache['history_kline']['datetime']) != dt_datetime:
-                ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
-                                                                           start=base.start_date.strftime('%Y-%m-%d'),
-                                                                           end=dt.strftime('%Y-%m-%d'), ktype='K_DAY')
-                if ret_code == -1 or bar_data is None:
-                    for i in range(3):
-                        ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
-                                                                                   start=base.start_date.strftime(
-                                                                                       '%Y-%m-%d'),
-                                                                                   end=dt.strftime('%Y-%m-%d'),
-                                                                                   ktype='K_DAY')
-                        if ret_code != -1 and bar_data is not None:
-                            return ret_code, bar_data
-                        else:
-                            time.sleep(0.1)
-                self._cache['history_kline'] = bar_data
+        elif dt_time != current_time:
+            if self._cache['history_kline'] is None:
+                end_date = datetime.strptime('2017-12-31', '%Y-%m-%d').date()
+                last_year = timedelta(days=365)
+                bar_data = pd.DataFrame()
+                self._cache['history_kline'] = pd.DataFrame()
+                while bar_data is not None:  # TODO
+                    begin_date = end_date - last_year
+                    ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
+                                                                               start=begin_date.strftime('%Y-%m-%d'),
+                                                                               end=end_date.strftime('%Y-%m-%d'),
+                                                                               ktype='K_DAY')
+                    end_date = begin_date
+                    if ret_code == -1:
+                        for i in range(3):
+                            ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
+                                                                                       start=base.start_date.strftime(
+                                                                                           '%Y-%m-%d'),
+                                                                                       end=dt.strftime('%Y-%m-%d'),
+                                                                                       ktype='K_DAY')
+                            if ret_code != -1 and bar_data is not None:
+                                return ret_code, bar_data
+                            else:
+                                time.sleep(0.1)
+                    if ret_code == -1:
+                        print(bar_data)
+                    self._cache['history_kline'] = self._cache['history_kline'].append(bar_data)
+
             else:
                 ret_code, bar_data = 0, self._cache['history_kline']
 
-        elif dt_time > current_time:
-            if self._cache['history'] is None or int(self._cache['history']['datetime']) != dt_datetime:
-                ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
-                                                                           start=base.start_date.strftime('%Y-%m-%d'),
-                                                                           end=current.strftime('%Y-%m-%d'),
-                                                                           ktype='K_DAY')
-                if ret_code == -1 or bar_data is None:
-                    for i in range(3):
-                        ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
-                                                                                   start=base.start_date.strftime(
-                                                                                       '%Y-%m-%d'),
-                                                                                   end=current.strftime('%Y-%m-%d'),
-                                                                                   ktype='K_DAY')
-                        if ret_code != -1 and bar_data is not None:
-                            return ret_code, bar_data
-                        else:
-                            time.sleep(0.1)
-                self._cache['history_kline'] = bar_data
-            else:
-                ret_code, bar_data = 0, self._cache['history_kline']
+        # elif dt_time > current_time:
+        #     if self._cache['history'] is None or int(self._cache['history']['datetime']) != dt_datetime:
+        #         ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
+        #                                                                    start=base.start_date.strftime('%Y-%m-%d'),
+        #                                                                    end=current.strftime('%Y-%m-%d'),
+        #                                                                    ktype='K_DAY')
+        #         if ret_code == -1 or bar_data is None:
+        #             for i in range(3):
+        #                 ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id,
+        #                                                                            start=base.start_date.strftime(
+        #                                                                                '%Y-%m-%d'),
+        #                                                                            end=current.strftime('%Y-%m-%d'),
+        #                                                                            ktype='K_DAY')
+        #                 if ret_code != -1 and bar_data is not None:
+        #                     return ret_code, bar_data
+        #                 else:
+        #                     time.sleep(0.1)
+        #         if ret_code == -1:
+        #             print(bar_data)
+        #         self._cache['history_kline'] = bar_data
+        #     else:
+        #         ret_code, bar_data = 0, self._cache['history_kline']
 
         if ret_code == -1 or bar_data is None:
             raise NotImplementedError
@@ -294,7 +327,7 @@ class FUTUDataSource(AbstractDataSource):
         start_dt = start_dt_loc.strftime("%Y-%m-%d").replace('-', '').replace(' ', '').replace(':', '')
         start_dt = int(start_dt) - bar_count + 1
 
-        if self._cache['history_kline'] is None or int(self._cache['history_kline']['datetime']) != dt_time:
+        if self._cache['history_kline'] is None:
             ret_code, bar_data = self._quote_context.get_history_kline(instrument.order_book_id, start=start_dt,
                                                                        end=dt.strftime('%Y-%m-%d'), ktype='K_DAY')
             if ret_code == -1 or bar_data is None:
@@ -436,6 +469,13 @@ class FUTUDataSource(AbstractDataSource):
         current_time = str(current).replace('-', '')
         if current_time == dt_time:
             self._cache.remove_all()
+
+    def update_data(self):
+        self._quote_context.subscribe(stock_code=self._env.config.base.benchmark, data_type='K_DAY', push=True)
+        update_data = self._quote_context.set_handler(CurKlineTest())
+        self._quote_context.start()
+
+        self._cache['history_kline'].append(update_data)
 
     def register_event(self, event):
         event_bus = Environment.get_instance().event_bus
