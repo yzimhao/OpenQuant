@@ -23,6 +23,7 @@ from datetime import date, timedelta
 import datetime
 import time
 import six
+from rqalpha.environment import Environment
 from rqalpha.events import EVENT
 #导入futu api 库
 from openft.open_quant_context import *
@@ -37,6 +38,8 @@ class CurKlineTest(CurKlineHandlerBase):
             for i in range(len(bar_data['time_key'])):  # 时间转换
                 bar_data.loc[i, 'time_key'] = int(
                     bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
+
+            del bar_data['k_type']   # 删除推送数据多出来的字段
 
             bar_data.rename(columns={'time_key': 'datetime', 'turnover': 'total_turnover'}, inplace=True)  # 将字段名称改为一致的
 
@@ -235,6 +238,8 @@ class FUTUDataSource(AbstractDataSource):
                                 time.sleep(0.1)
                     if ret_code == -1:
                         print(bar_data)
+                    if bar_data.empty:
+                        return
                     self._cache['history_kline'] = self._cache['history_kline'].append(bar_data)
 
             else:

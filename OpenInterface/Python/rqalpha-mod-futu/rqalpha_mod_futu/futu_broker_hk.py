@@ -17,13 +17,12 @@
 
 from rqalpha.interface import AbstractBroker
 from rqalpha.environment import Environment
-from rqalpha.const import ACCOUNT_TYPE
+from rqalpha.const import DEFAULT_ACCOUNT_TYPE
 from rqalpha.const import MATCHING_TYPE
 from rqalpha.events import EVENT
 from rqalpha.model.order import *
 from rqalpha.model.portfolio import *
-from rqalpha.model.position import *
-from rqalpha.model.account import *
+from rqalpha.mod.rqalpha_mod_sys_accounts import *
 
 
 from rqalpha.mod.rqalpha_mod_sys_simulation.simulation_broker import SimulationBroker
