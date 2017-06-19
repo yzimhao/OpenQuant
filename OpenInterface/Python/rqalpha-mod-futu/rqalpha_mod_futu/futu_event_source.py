@@ -28,8 +28,8 @@ from .futu_market_state import *
 
 #回测的event 直接用rqalpha 的simyulation就可以
 class FUTUEventForBacktest(SimulationEventSource):
-    def __init__(self, env, account_list):
-        super(FUTUEventForBacktest, self).__init__(env, account_list)
+    def __init__(self, env):
+        super(FUTUEventForBacktest, self).__init__(env)
 
 class TimePeriod(Enum):
     BEFORE_TRADING = 'before_trading'

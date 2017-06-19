@@ -65,7 +65,8 @@ class FUTUMod(AbstractMod):
 
     def _set_event_source(self):
         if IsRuntype_Backtest():
-            event_source = FUTUEventForBacktest(self._env, self._env.config.base.account_list)
+            # event_source = FUTUEventForBacktest(self._env, self._env.config.base.accounts)
+            event_source = FUTUEventForBacktest(self._env)
             self._env.set_event_source(event_source)
         elif IsRuntype_RealtimeStrategy():
             event_source = FUTUEventForRealtime(self._env, self._mod_config, self._market_state_source)
