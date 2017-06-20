@@ -5,14 +5,16 @@ from rqalpha import run_file
 
 config = {
   "base": {
-    "start_date": "2017-05-01",
-    "end_date": "2017-06-10",
+    "start_date": "2017-06-01",
+    "end_date": "2017-06-13",
     "securities": ['stock'],
-    "stock_starting_cash": 100000,
+    "accounts": {
+      "stock": 100000
+    },
     "benchmark": "HK.00700",
     "frequency": "1d",
     # 运行类型，`b` 为历史数据回测，`p` 为实时数据模拟交易, `r` 为实时数据实盘交易。
-    "run_type":  "p",
+    "run_type":  "b",
   },
   "extra": {
     "log_level": "verbose",
@@ -28,7 +30,7 @@ config = {
     },
     "sys_stock_realtime":
     {
-      'enabled' : False,
+      'enabled': False,
     },
   }
 }

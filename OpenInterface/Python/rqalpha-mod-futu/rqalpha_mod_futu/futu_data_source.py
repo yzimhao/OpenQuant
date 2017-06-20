@@ -223,7 +223,7 @@ class FUTUDataSource(AbstractDataSource):
         if ret_code == -1 or bar_data is None:
             raise NotImplementedError
 
-        ret_dict = bar_data[bar_data.datetime <= int(dt_time + "000000")].iloc[-1].to_dict()  # bar_data，没问题，转了以后数据有问题
+        ret_dict = bar_data[bar_data.datetime <= int(dt_time + "000000")].iloc[0].to_dict()
 
         return ret_dict
 
@@ -284,6 +284,7 @@ class FUTUDataSource(AbstractDataSource):
                 bar_data.loc[i, 'time_key'] = int(
                     bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
             bar_data.rename(columns={'time_key': 'datetime', 'turnover': 'total_turnover'}, inplace=True)  # 将字段名称改为一致的
+            bar_data = bar_data[::-1]
 
             self._cache['history_kline'] = self._cache['history_kline'].append(bar_data)
         return ret_code, self._cache['history_kline']
