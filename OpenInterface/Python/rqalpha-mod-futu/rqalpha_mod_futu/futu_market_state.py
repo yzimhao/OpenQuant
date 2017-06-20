@@ -68,9 +68,10 @@ class FUTUMarketStateSource(object):
         self._query_futu_market_state()
 
         # 定时请求市场状态
-        market_state_thread = Thread(target=self._thread_market_state_query)
-        market_state_thread.setDaemon(True)
-        market_state_thread.start()
+        if IsRuntype_RealtimeStrategy() is True or IsRuntype_RealTrade() is True:
+            market_state_thread = Thread(target=self._thread_market_state_query)
+            market_state_thread.setDaemon(True)
+            market_state_thread.start()
 
     def get_futu_market_state(self):
         return self._market_state

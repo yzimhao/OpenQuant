@@ -49,7 +49,7 @@ __config__ = {
         # liquidity_limit: 当对手盘没有流动性的时候，无法买进/卖出，默认关闭
         "liquidity_limit": False,
         # 是否有成交量限制
-        "volume_limit": False,  # 原来是True
+        "volume_limit": True,
         # 按照当前成交量的百分比进行撮合
         "volume_percent": 0.25,
     }
