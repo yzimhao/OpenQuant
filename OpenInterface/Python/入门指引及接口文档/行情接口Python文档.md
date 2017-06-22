@@ -226,7 +226,7 @@ ret_data：
 ### 实例化上下文对象
 
 ```python
-quote_ctx = OpenQuoteContext(host='127.0.0.1', sync_port=11111, async_port=11111)
+quote_ctx = OpenQuoteContext(host='127.0.0.1', port=11111)
 ```
 **功能**：创建上下文，建立网络连接
 **参数**:
@@ -281,7 +281,7 @@ handler必须是以下几种类的子类对象：
 
 
 
-###获取交易日 get_trading_days
+### 获取交易日 get_trading_days
 
 ```python
 ret_code, ret_data = quote_ctx.get_trading_days(market, start_date=None, end_date=None)
@@ -349,7 +349,7 @@ ret_code失败时，ret_data返回为错误描述字符串；
 
 
 
-###获取复权因子 get_autype_list
+### 获取复权因子 get_autype_list
 
 
 ```python
@@ -390,7 +390,7 @@ ret_code失败时，ret_data返回为错误描述字符串；
 
 
 
-###获取历史K线 get_history_kline
+### 获取历史K线 get_history_kline
 ```python
 ret_code, ret_data = quote_ctx.get_history_kline(code, start=None, end=None, ktype='K_DAY', autype='qfq')
 ```
@@ -440,7 +440,7 @@ ret_code失败时，ret_data返回为错误描述字符串；
 
 
 
-###获取市场快照 get_market_snapshot
+### 获取市场快照 get_market_snapshot
 
 ```python
 ret_code, ret_data = quote_ctx.get_market_snapshot(code_list):
@@ -543,7 +543,7 @@ ret_code失败时，ret_data返回为错误描述字符串；
 
 
 
-###获取板块集合下的子板块列表 get_plate_list
+### 获取板块集合下的子板块列表 get_plate_list
 ```python
 ret_code, ret_data = quote_ctx.get_plate_list(market, plate_class)
 ```
@@ -658,6 +658,11 @@ ret_code失败时，ret_data返回为错误描述字符串；
 
 
 
+### 获取牛牛程序全局状态  get_global_state
+```python
+ret_code, state_dict = quote_ctx.get_global_state()
+```
+
 **功能**：获取牛牛程序全局状态
 
 **参数**：无
@@ -705,7 +710,7 @@ ret_code失败时，ret_data返回为错误描述字符串；
 
 
 
-###订阅 subscribe
+### 订阅 subscribe
 ```python
 ret_code,ret_data= quote_ctx.subscribe(stock_code, data_type, push=False) 
 ```
@@ -729,7 +734,7 @@ ret_code为成功，ret_data返回None
 
 
 
-###退订 unsubscribe
+### 退订 unsubscribe
 
 ```python
 ret_code,ret_data = quote_ctx.unsubscribe(stock_code, data_type, unpush=True) 
@@ -755,7 +760,7 @@ ret_code为成功，ret_data返回None
 
 
 
-###查询订阅 query_subscription
+### 查询订阅 query_subscription
 ```python
 ret_data = quote_ctx.query_subscription(query=0) 
 ```
@@ -780,7 +785,7 @@ ret_data = quote_ctx.query_subscription(query=0)
 
 
 
-###获取报价   get_stock_quote 和 StockQuoteHandlerBase
+### 获取报价   get_stock_quote 和 StockQuoteHandlerBase
 
 对于同步请求使用**get_stock_quote**直接得到报价
 ```python
@@ -822,7 +827,7 @@ ret_code失败时，ret_data返回为错误描述字符串；
 
 
 
-###获取逐笔   get_rt_ticker 和 TickerHandlerBase
+### 获取逐笔   get_rt_ticker 和 TickerHandlerBase
 对于同步请求使用**get_rt_ticker**直接得到逐笔
 
 ```python
@@ -876,7 +881,7 @@ ticker_direction:
 
 
 
-###获取实时K线    get_cur_kline 和 CurKlineHandlerBase
+### 获取实时K线    get_cur_kline 和 CurKlineHandlerBase
 
 对于同步请求使用**get_cur_kline**直接得到实时K线
 ```python
@@ -918,7 +923,7 @@ ret_code失败时，ret_data为错误描述字符串；
 
 
 
-###获取摆盘   get_order_book 和 OrderBookHandlerBase
+### 获取摆盘   get_order_book 和 OrderBookHandlerBase
 对于同步请求使用**get_order_book**直接得到摆盘
 
 ```python
@@ -962,7 +967,7 @@ ret_code失败时，ret_data为错误描述字符串；
 
 
 
-###获取分时数据   get_rt_data 和 RTDataHandlerBase
+### 获取分时数据   get_rt_data 和 RTDataHandlerBase
 对于同步请求使用**get_rt_data**直接得到分时数据
 
 ```python
@@ -1009,7 +1014,7 @@ ret_code失败时，ret_data为错误描述字符串；
 
 
 
-###获取经纪队列   get_broker_queue 和 BrokerHandlerBase
+### 获取经纪队列   get_broker_queue 和 BrokerHandlerBase
 对于同步请求使用**get_broker_queue**直接得到经纪队列
 
 ```python
