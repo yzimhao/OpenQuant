@@ -19,16 +19,12 @@ from rqalpha.interface import AbstractBroker
 from rqalpha.environment import Environment
 from rqalpha.const import DEFAULT_ACCOUNT_TYPE
 from rqalpha.const import MATCHING_TYPE
-from rqalpha.events import EVENT
+from rqalpha.events import EVENT, Event
 from rqalpha.model.order import *
-from rqalpha.model.portfolio import *
-from rqalpha.mod.rqalpha_mod_sys_accounts import *
-
-
-from rqalpha.mod.rqalpha_mod_sys_simulation.simulation_broker import SimulationBroker
-from rqalpha.mod.rqalpha_mod_sys_simulation.utils import init_portfolio
-import six
+from rqalpha.model.base_position import Positions
+from rqalpha.model.portfolio import Portfolio
 from .futu_utils import *
+
 
 class FUTUBrokerHK(AbstractBroker):
     '''
@@ -65,7 +61,7 @@ class FUTUBrokerHK(AbstractBroker):
         """
         if self._portfolio is not None:
             return self._portfolio
-        self._portfolio =  self._init_portfolio()
+        self._portfolio = self._init_portfolio()
 
         if self._portfolio.stock_account is None:
             raise RuntimeError("accout config error")
@@ -98,7 +94,7 @@ class FUTUBrokerHK(AbstractBroker):
             self._open_order.append((futu_order_id, order))
             self._env.event_bus.publish_event(Event(EVENT.ORDER_CREATION_PASS, account=account, order=order))
             sleep(0.1)
-            _check_open_orders(futu_order_id)
+            self.__check_open_orders(futu_order_id)
 
     def cancel_order(self, order):
         """
@@ -107,13 +103,13 @@ class FUTUBrokerHK(AbstractBroker):
         :type order: :class:`~Order`
         """
         account = self._get_account(order.order_book_id)
-        futu_order_id = _get_futu_order_id(order)
+        futu_order_id = self.__get_futu_order_id(order)
 
         if futu_order_id is None:
             return
 
         #立即检查一次订单状态
-        _check_open_orders(futu_order_id)
+        self.__check_open_orders(futu_order_id)
         if order.is_final():
             return
 
@@ -123,7 +119,7 @@ class FUTUBrokerHK(AbstractBroker):
             self._env.event_bus.publish_event(Event(EVENT.ORDER_CANCELLATION_REJECT, account=account, order=order))
         else:
             sleep(0.1)
-            _check_open_orders(futu_order_id)  #提交请求后，立即再检查一次状态
+            self._check_open_orders(futu_order_id)  #提交请求后，立即再检查一次状态
 
     def get_open_orders(self, order_book_id=None):
         """
@@ -219,7 +215,8 @@ class FUTUBrokerHK(AbstractBroker):
             else:
                 pass  # 8 = 等待开盘 21= 本地已发送 22=本地已发送，服务器返回下单失败、没产生订单 23=本地已发送，等待服务器返回超时
 
-    def _get_futu_positions(self):
+    def _get_futu_positions(self, env):
+        StockPosition = env.get_position_model(DEFAULT_ACCOUNT_TYPE.STOCK.name)
         positions = Positions(StockPosition)
         ret, pd_data = self._trade_context.position_list_query(self._trade_envtype)
         if ret != 0:
@@ -243,18 +240,22 @@ class FUTUBrokerHK(AbstractBroker):
         config = self._env.config
         start_date = config.base.start_date
         total_cash = 0
-        for account_type in config.base.account_list:
-            if account_type == DEFAULT_ACCOUNT_TYPE.STOCK:
-                stock_starting_cash = config.base.stock_starting_cash
+        for account_type, stock_starting_cash in six.iteritems(config.base.accounts):
+            if account_type == DEFAULT_ACCOUNT_TYPE.STOCK.name:
+                # stock_starting_cash = config.base.accounts
                 if stock_starting_cash == 0:
                     raise RuntimeError(_(u"stock starting cash can not be 0, using `--stock-starting-cash 1000`"))
-                all_positons = self._get_futu_positions()
+                all_positons = self._get_futu_positions(self._env)
                 if all_positons is None:
                     raise RuntimeError("_init_portfolio fail")
+                StockAccount = self._env.get_account_model(DEFAULT_ACCOUNT_TYPE.STOCK.name)
                 accounts[DEFAULT_ACCOUNT_TYPE.STOCK] = StockAccount(stock_starting_cash, all_positons)
                 total_cash += stock_starting_cash
             else:
                 raise NotImplementedError
+
+        #TODO
+        A = Portfolio(start_date, 1, total_cash, accounts)
         return Portfolio(start_date, 1, total_cash, accounts)
 
     def _get_account(self, order_book_id):
