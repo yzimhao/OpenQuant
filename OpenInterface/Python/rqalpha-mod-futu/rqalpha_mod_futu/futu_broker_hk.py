@@ -27,14 +27,15 @@ from .futu_utils import *
 
 
 class FUTUBrokerHK(AbstractBroker):
-    '''
+    """
     FUTUBrokerHK 对象用于对接futu港股的仿真和真实交易
     设计思路：
     1. 帐户的初始资金需要在rqalpha框架下的config中设置 config.base.stock_starting_cash
     不与futu的帐户信息同步, 一方面是不影响长期自动运行时计算的收益率等指标,另一方面也为了控制策略脚本对futu实际帐户资金的占用.
     2. 初始化时会同步一次futu帐户的持仓数据, 后续状态完全由rqalpha框架内部维护状态, 故策略中记录的持仓有可能与用户实际futu帐户不一致
     3. 下单 ，撤单调后，脚本中会定时检查该订单在futu环境中的状态, 产生对应的event事件，可能存在延时。
-    '''
+    """
+
     def __init__(self, env, mod_config):
         self._env = env
         self._mod_config = mod_config
@@ -44,9 +45,9 @@ class FUTUBrokerHK(AbstractBroker):
         self._env.event_bus.add_listener(EVENT.PRE_BEFORE_TRADING, self._pre_before_trading)
         self._env.event_bus.add_listener(EVENT.PRE_AFTER_TRADING, self._pre_after_trading)
 
-        #futu api创建及参数
+        # futu api创建及参数
         self._trade_context = OpenHKTradeContext(self._mod_config.api_svr.ip, self._mod_config.api_svr.port)
-        self._trade_envtype = 1  #futu交易 envtype : 0 = 实盘  1 = 仿真
+        self._trade_envtype = 1  # futu交易 envtype : 0 = 实盘  1 = 仿真
         if IsRuntype_RealTrade():
             self._trade_envtype = 0
 
@@ -63,7 +64,7 @@ class FUTUBrokerHK(AbstractBroker):
             return self._portfolio
         self._portfolio = self._init_portfolio()
 
-        if self._portfolio.stock_account is None:
+        if self._portfolio._accounts is None:
             raise RuntimeError("accout config error")
 
         return self._portfolio
@@ -80,12 +81,12 @@ class FUTUBrokerHK(AbstractBroker):
         self._env.event_bus.publish_event(Event(EVENT.ORDER_PENDING_NEW, account=account, order=order))
         order.active()
 
-        #发起futu api接口请求
-        futu_order_side = 0  if order.side == SIDE.BUY else 1
-        futu_order_type = 0  #港股增强限价单
+        # 发起futu api接口请求
+        futu_order_side = 0 if order.side == SIDE.BUY else 1
+        futu_order_type = 0  # 港股增强限价单
         ret_code, ret_data = self._trade_context.place_order(order.price, order.quantity, order.order_book_id, futu_order_side, futu_order_type, self._trade_envtype)
 
-        #事件通知
+        # 事件通知
         if ret_code != 0:
             order.mark_rejected("futu api req err:{}".format(ret_code))
             self._env.event_bus.publish_event(Event(EVENT.ORDER_CREATION_REJECT, account=account, order=order))
@@ -108,7 +109,7 @@ class FUTUBrokerHK(AbstractBroker):
         if futu_order_id is None:
             return
 
-        #立即检查一次订单状态
+        # 立即检查一次订单状态
         self.__check_open_orders(futu_order_id)
         if order.is_final():
             return
@@ -119,7 +120,7 @@ class FUTUBrokerHK(AbstractBroker):
             self._env.event_bus.publish_event(Event(EVENT.ORDER_CANCELLATION_REJECT, account=account, order=order))
         else:
             sleep(0.1)
-            self._check_open_orders(futu_order_id)  #提交请求后，立即再检查一次状态
+            self._check_open_orders(futu_order_id)  # 提交请求后，立即再检查一次状态
 
     def get_open_orders(self, order_book_id=None):
         """
@@ -136,7 +137,7 @@ class FUTUBrokerHK(AbstractBroker):
         print("broker before_trading")
 
     def _pre_after_trading(self, event):
-        #收盘时清掉未完成的订单
+        # 收盘时清掉未完成的订单
         for _, order in self._open_order:
             order.mark_rejected(_(u"Order Rejected: {order_book_id} can not match. Market close.").format(
                 order_book_id=order.order_book_id
@@ -254,14 +255,12 @@ class FUTUBrokerHK(AbstractBroker):
             else:
                 raise NotImplementedError
 
-        #TODO
-        A = Portfolio(start_date, 1, total_cash, accounts)
         return Portfolio(start_date, 1, total_cash, accounts)
 
     def _get_account(self, order_book_id):
-        #account = self._env.get_account(order_book_id)
+        # account = self._env.get_account(order_book_id)
         # for debug
-        account =  self._env.portfolio.accounts[DEFAULT_ACCOUNT_TYPE.STOCK]
+        account = self._env.portfolio.accounts[DEFAULT_ACCOUNT_TYPE.STOCK]
         return account
 
     def _get_futu_order_id(self, order):
@@ -277,9 +276,9 @@ class FUTUBrokerHK(AbstractBroker):
         return None
 
     def _remove_open_order_by_futu_id(self, futu_order_id):
-       order = self._get_order_by_futu_id(futu_order_id)
-       if order is not None:
-           self._open_order.remove((futu_order_id, order))
+        order = self._get_order_by_futu_id(futu_order_id)
+        if order is not None:
+            self._open_order.remove((futu_order_id, order))
 
     def _thread_order_check(self):
         while True:
