@@ -192,8 +192,10 @@ class FUTUDataSource(AbstractDataSource):
         current_time = str(current).replace('-', '')
         dt_time = str(dt.date()).replace('-', '')
 
-        if dt_time == current_time:  # 判断时间是否是当天，注意格式转换
-            ret_code, bar_data = self._get_cur_cache(instrument)
+        if dt_time == current_time:  # 判断时间是否是当天，每天都是要清空缓存，所以要先获取历史
+            if self._cache['history_kline'] is None:
+                ret_code, bar_history = self._get_histroy_cache(instrument)
+                ret_code, bar_data = self._get_cur_cache(instrument)
 
         elif dt_time != current_time:
             if self._cache['history_kline'] is None:
@@ -219,17 +221,18 @@ class FUTUDataSource(AbstractDataSource):
                 else:
                     time.sleep(0.1)
 
-        del bar_data['code'], bar_data['k_type']     # 去掉code和当前K线里多余的字段
+        del bar_data['code']     # 去掉code,这是当前K线里多余的字段
         for i in range(len(bar_data)):  # 时间转换
             bar_data.loc[i, 'time_key'] = int(
                 bar_data['time_key'][i].replace('-', '').replace(' ', '').replace(':', ''))
 
         bar_data.rename(columns={'time_key': 'datetime', 'turnover': 'total_turnover'},
                         inplace=True)  # 将字段名称改为一致的
+        bar_data['volume'] = bar_data['volume'].astype('float64')  # 把成交量的数据类型转为float
 
         # 在历史数据中加上今天的数据 但是要去重
-        self._cache['history_kline'].append(bar_data)
-        self._cache['history_kline'].drop_duplicates(['datetime'])
+        self._cache['history_kline'] = self._cache['history_kline'].append(bar_data[::-1])    # 好像没有加上
+        # self._cache['history_kline'].drop_duplicates(['datetime'])
         return ret_code, self._cache['history_kline']
 
     def _get_histroy_cache(self, instrument):
@@ -425,7 +428,7 @@ class FUTUDataSource(AbstractDataSource):
                         result.append(True)
         return result
 
-    def _get_snapshot_cache(self, order_book_id):   # 获取市场快照的参数dates比较奇怪，再考虑下怎么修改
+    def _get_snapshot_cache(self, order_book_id):
         self._cache["market_snapshot"] = pd.DataFrame()
 
         ret_code, ret_data = self._quote_context.get_market_snapshot([order_book_id])
