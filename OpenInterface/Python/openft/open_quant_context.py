@@ -10,7 +10,7 @@ import pandas as pd
 import asyncore
 import socket as sock
 import time
-
+from struct import pack
 
 class RspHandlerBase(object):
     def __init__(self):
@@ -196,7 +196,7 @@ class _SyncNetworkQueryCtx:
 
         s = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
         s.setsockopt(sock.SOL_SOCKET, sock.SO_REUSEADDR, 1)
-        s.setsockopt(sock.SOL_SOCKET, sock.SO_LINGER, 0)
+        s.setsockopt(sock.SOL_SOCKET, sock.SO_LINGER, pack('ii', 0, 0))
         s.settimeout(10)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.s = s
@@ -1350,23 +1350,3 @@ class OpenUSTradeContext:
         deal_list_table = pd.DataFrame(deal_list, columns=col_list)
 
         return RET_OK, deal_list_table
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
